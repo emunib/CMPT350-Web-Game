@@ -58,3 +58,6 @@ typings/
 .env
 
 WebGame/\.idea/
+\.idea/
+
+\.DS_Store
