@@ -1,9 +1,11 @@
 let movement = {
-    up: false,
-    down: false,
     left: false,
     right: false
 };
+let gravity = {
+    gravity : 0.05,
+    gravitySpeed : 0
+}
 document.addEventListener('keydown', (event)=> {
     switch (event.keyCode) {
         case 65: // A
