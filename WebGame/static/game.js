@@ -6,10 +6,16 @@ var canvas = document.getElementById('canvas');
 canvas.width = 800;
 canvas.height = 600;
 
+let gravity = {
+    gravityVal : 5,
+    gravitySpeed : 0,
+    ground : canvas.height
+}
+
 setInterval(function() {
     socket.emit('movement', movement);
-    socket.emit('gravity');
-    socket.emit('grounded');
+    socket.emit('gravity',gravity);
+    socket.emit('grounded',grounded);
 }, 1000 / 60);
 
 var context = canvas.getContext('2d');

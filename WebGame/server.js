@@ -32,26 +32,14 @@ io.on('connection', function(socket) {
         if (data.right) {
             player.x += 5;
         }
-        // if (data.up) {
-        //     player.y -= 5;
-        // }
-        // if (data.down) {
-        //     player.y += 5;
-        // }
-        // player.gravitySpeed += player.gravity;
-        // player.y += player.gravity;
-        // if(player.y > 590){
-        //     player.y = 590;
-        // }
+
     });
     socket.on('gravity',data=>{
         var player = players[socket.id] || {};
-        player.y += 5;
-    });
-    socket.on('canvas',data=>{
-        var player = players[socket.id] || {};
-        if(player.y > canvas.height-10){
-            player.y = canvas.height-10;
+        var grav = data.gravityVal;
+        // player.y += grav;
+        if(player.y < data.ground-10){
+            player.y += grav;
         }
     });
 
