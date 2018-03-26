@@ -16,7 +16,7 @@ app.get('/', function(request, response) {
 server.listen(5000, function() {
     console.log('Starting server on port 5000');
 });
-var players = {};
+let players = {};
 io.on('connection', function(socket) {
     socket.on('new player', function() {
         players[socket.id] = {
@@ -24,8 +24,11 @@ io.on('connection', function(socket) {
             y: 300
         };
     });
+    socket.on('disconnect', () => {
+        delete players[socket.id];
+    });
     socket.on('movement', function(data) {
-        var player = players[socket.id] || {};
+        let player = players[socket.id] || {};
         if (data.left) {
             player.x -= 5;
         }
