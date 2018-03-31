@@ -28,12 +28,14 @@ io.on('connection', function (socket) {
         };
     });
     socket.on('movement', function (data) {
-        var player = players[socket.id] || {};
+        let player = players[socket.id] || {};
+        let p = getPoint(player.x);
+
         if (data.left) {
-            player.x -= dist(3, -1, player);
+            player.x -= p.speed - p.m / 4;
         }
         if (data.right) {
-            player.x += dist(3, 1, player);
+            player.x += p.speed + p.m / 4;
         }
         if (player.x < 0) {
             player.x = 0;
@@ -41,7 +43,7 @@ io.on('connection', function (socket) {
         else if (player.x >= constants.canvas.WIDTH) {
             player.x = constants.canvas.WIDTH - 1;
         }
-        player.y = ground(player, getPoints())
+        player.y = p.m * player.x + p.b;
     });
     socket.on('gravity', data => {
 
@@ -53,32 +55,29 @@ setInterval(function () {
 }, 1000 / 60);
 
 
-
-
-
-var Simple1DNoise = function() {
+var Simple1DNoise = function () {
     var MAX_VERTICES = 256;
-    var MAX_VERTICES_MASK = MAX_VERTICES -1;
+    var MAX_VERTICES_MASK = MAX_VERTICES - 1;
     var amplitude = 1;
     var scale = 1;
 
     var r = [];
 
-    for ( var i = 0; i < MAX_VERTICES; ++i ) {
+    for (var i = 0; i < MAX_VERTICES; ++i) {
         r.push(Math.random());
     }
 
-    var getVal = function( x ){
+    var getVal = function (x) {
         var scaledX = x * scale;
         var xFloor = Math.floor(scaledX);
         var t = scaledX - xFloor;
-        var tRemapSmoothstep = t * t * ( 3 - 2 * t );
+        var tRemapSmoothstep = t * t * (3 - 2 * t);
 
         /// Modulo using &
         var xMin = xFloor & MAX_VERTICES_MASK;
-        var xMax = ( xMin + 1 ) & MAX_VERTICES_MASK;
+        var xMax = (xMin + 1) & MAX_VERTICES_MASK;
 
-        var y = lerp( r[ xMin ], r[ xMax ], tRemapSmoothstep );
+        var y = lerp(r[xMin], r[xMax], tRemapSmoothstep);
 
         return y * amplitude;
     };
@@ -90,31 +89,26 @@ var Simple1DNoise = function() {
      * @param t The value between the two
      * @returns {number}
      */
-    var lerp = function(a, b, t ) {
-        return a * ( 1 - t ) + b * t;
+    var lerp = function (a, b, t) {
+        return a * (1 - t) + b * t;
     };
 
     // return the API
     return {
         getVal: getVal,
-        setAmplitude: function(newAmplitude) {
+        setAmplitude: function (newAmplitude) {
             amplitude = newAmplitude;
         },
-        setScale: function(newScale) {
+        setScale: function (newScale) {
             scale = newScale;
         }
     };
 };
 
 
-
-
-
-
-
 const segments = 100;
 const amplitude = constants.canvas.WIDTH / 2;
-const smoothness = 0.01;
+const smoothness = 0.008;
 
 let generator = new Simple1DNoise();
 let points = [];
@@ -123,41 +117,29 @@ function getPoints() {
     if (points.length === 0) {
         for (let i = 0; i <= segments; i++) {
             let y = generator.getVal(i * constants.canvas.WIDTH / segments * smoothness) * amplitude;
-            points.push({x: i * constants.canvas.WIDTH / segments, y: constants.canvas.HEIGHT - y})
+            points.push({
+                x: i * constants.canvas.WIDTH / segments,
+                y: constants.canvas.HEIGHT - y
+            })
+        }
+        for (let i = 0; i < points.length - 1; i++) {
+            let p1 = points[i];
+            let p2 = points[i + 1];
+
+            let dx = (p2.x - p1.x);
+            let dy = (p2.y - p1.y);
+            let m = dy / dx;
+            let h = Math.sqrt(dx * dx + dy * dy);
+
+            p1.m = m;
+            p1.b = p1.y - m * p1.x;
+            p1.speed = (constants.player.SPEED * dx / h);
         }
     }
     return points
 }
 
-function dist(speed, dir, point) {
-    if (!(Object.keys(point).length === 0 && point.constructor === Object)) {
-        let i = Math.floor(point.x / (constants.canvas.WIDTH / segments));
-        let p1 = points[i];
-        let p2 = points[i + 1];
-
-        let dx = (p2.x - p1.x);
-        let dy = (p2.y - p1.y);
-        let m = dy/dx;
-
-        // if (m <= 1 && m >= -1) {
-            let h = Math.sqrt(dx * dx + dy * dy);
-            console.log((speed * dx / h) + (m * dir));
-            return (speed * dx / h) + (m * dir / 4);
-        // }
-
-        // return speed - 0.2 * m * dir;
-
-    }
-}
-
-function ground(point, points) {
-    if (!(Object.keys(point).length === 0 && point.constructor === Object)) {
-        let i = Math.floor(point.x / (constants.canvas.WIDTH / segments));
-        let p1 = points[i];
-        let p2 = points[i + 1];
-
-        let m = (p2.y - p1.y) / (p2.x - p1.x);
-        let b = p1.y - m * p1.x;
-        return m * point.x + b;
-    }
+function getPoint(x) {
+        let i = Math.floor(x / (constants.canvas.WIDTH / segments));
+        return getPoints()[i];
 }
