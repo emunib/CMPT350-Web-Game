@@ -6,8 +6,11 @@ let socketIO = require('socket.io');
 let app = express();
 let server = http.Server(app);
 let io = socketIO(server);
+let constants = require('./shared/constants.js');
+
 app.set('port', 5000);
 app.use('/static', express.static(__dirname + '/static'));
+app.use('/static', express.static(__dirname + '/shared'));
 // Routing
 app.get('/', function (request, response) {
     response.sendFile(path.join(__dirname, 'index.html'));
@@ -27,16 +30,16 @@ io.on('connection', function (socket) {
     socket.on('movement', function (data) {
         var player = players[socket.id] || {};
         if (data.left) {
-            player.x -= 5;
+            player.x -= dist(3, -1, player);
         }
         if (data.right) {
-            player.x += 5;
+            player.x += dist(3, 1, player);
         }
         if (player.x < 0) {
             player.x = 0;
         }
-        else if (player.x >= 800) {
-            player.x = 800 - 1;
+        else if (player.x >= constants.canvas.WIDTH) {
+            player.x = constants.canvas.WIDTH - 1;
         }
         player.y = ground(player, getPoints())
     });
@@ -110,7 +113,7 @@ var Simple1DNoise = function() {
 
 
 const segments = 100;
-const amplitude = 800 / 2;
+const amplitude = constants.canvas.WIDTH / 2;
 const smoothness = 0.01;
 
 let generator = new Simple1DNoise();
@@ -119,17 +122,37 @@ let points = [];
 function getPoints() {
     if (points.length === 0) {
         for (let i = 0; i <= segments; i++) {
-            let y = generator.getVal(i * 800 / segments * smoothness) * amplitude;
-            points.push({x: i * 800 / segments, y: 600 - y})
+            let y = generator.getVal(i * constants.canvas.WIDTH / segments * smoothness) * amplitude;
+            points.push({x: i * constants.canvas.WIDTH / segments, y: constants.canvas.HEIGHT - y})
         }
     }
     return points
 }
 
+function dist(speed, dir, point) {
+    if (!(Object.keys(point).length === 0 && point.constructor === Object)) {
+        let i = Math.floor(point.x / (constants.canvas.WIDTH / segments));
+        let p1 = points[i];
+        let p2 = points[i + 1];
+
+        let dx = (p2.x - p1.x);
+        let dy = (p2.y - p1.y);
+        let m = dy/dx;
+
+        // if (m <= 1 && m >= -1) {
+            let h = Math.sqrt(dx * dx + dy * dy);
+            console.log((speed * dx / h) + (m * dir));
+            return (speed * dx / h) + (m * dir / 4);
+        // }
+
+        // return speed - 0.2 * m * dir;
+
+    }
+}
 
 function ground(point, points) {
     if (!(Object.keys(point).length === 0 && point.constructor === Object)) {
-        let i = Math.floor(point.x / (800 / segments));
+        let i = Math.floor(point.x / (constants.canvas.WIDTH / segments));
         let p1 = points[i];
         let p2 = points[i + 1];
 
@@ -138,4 +161,3 @@ function ground(point, points) {
         return m * point.x + b;
     }
 }
-
