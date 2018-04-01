@@ -6,6 +6,7 @@ let socketIO = require('socket.io');
 let app = express();
 let server = http.Server(app);
 let io = socketIO(server);
+let Vector = require('victor');
 let constants = require('./shared/constants.js');
 let ground = require('./lib/ground.js');
 
@@ -22,12 +23,14 @@ server.listen(5000, () => {
 });
 
 let players = {};
+let bullets = [];
 
 io.on('connection', (socket) => {
     socket.on('new player', function () {
         players[socket.id] = {
-            x: 300,
-            y: 0
+            pos: new Vector(400, 0),
+            aim: new Vector(0, -20),
+            ammo: 1
         };
     });
 
@@ -35,29 +38,89 @@ io.on('connection', (socket) => {
         delete players[socket.id];
     });
 
-    socket.on('movement', (data) => {
+    socket.on('input', (data) => {
         let player = players[socket.id] || {};
 
         if (Object.keys(player).length !== 0) {
-            let p = ground.getPoint(player.x);
-
+            let p = ground.getPoint(player.pos.x);
             if (data.left) {
-                player.x -= p.speed - p.m / 4;
+                player.pos.x -= p.eqn.speed - p.eqn.m / 4;
             }
             if (data.right) {
-                player.x += p.speed + p.m / 4;
+                player.pos.x += p.eqn.speed + p.eqn.m / 4;
             }
-            if (player.x < 0) {
-                player.x = 0;
+            if (player.pos.x < 0) {
+                player.pos.x = 0;
+            } else if (player.pos.x >= constants.WIDTH) {
+                player.pos.x = constants.WIDTH - 1;
             }
-            else if (player.x >= constants.WIDTH) {
-                player.x = constants.WIDTH - 1;
+            player.pos.y = p.eqn.m * player.pos.x + p.eqn.b;
+
+            if (data.aimleft) {
+                player.aim.rotateDeg(-1);
             }
-            player.y = p.m * player.x + p.b;
+
+            if (data.aimright) {
+                player.aim.rotateDeg(1);
+            }
+
+            if (data.powerup) {
+                player.aim.add(player.aim.clone().normalize());
+            }
+
+            if (data.powerdown) {
+                player.aim.subtract(player.aim.clone().normalize());
+            }
+
+            if (data.fire) {
+                if (player.ammo > 0) {
+                    bullets.push({
+                        pos: player.pos.clone().add(player.aim.clone().normalize().multiplyScalar(10)),
+                        vel: player.aim.clone().multiplyScalar(0.1)
+                    });
+                    player.ammo--;
+                }
+            } else {
+                player.ammo = 1;
+            }
         }
     });
 });
 
 setInterval(() => {
-    io.sockets.emit('state', players, ground.getPoints());
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        bullets[i].vel.y += 0.1;
+        bullets[i].pos.add(bullets[i].vel);
+
+        let hits = Object.keys(players).filter((id) => {
+            return (Object.keys(players[id]).length !== 0) && bullets[i].pos.distanceSq(players[id].pos) < 125;
+        });
+        if (hits.length > 0) {
+            bullets.splice(i, 1);
+            hits.forEach((id) => {
+                players[id] = {};
+            })
+        } else {
+            if (bullets[i].pos.x < 0 || bullets[i].pos.x >= constants.WIDTH) {
+                bullets.splice(i, 1);
+            } else {
+                let p = ground.getPoint(bullets[i].pos.x);
+                if (bullets[i].pos.y >= p.eqn.m * bullets[i].pos.x + p.eqn.b) {
+                    bullets.splice(i, 1);
+                }
+            }
+        }
+    }
+
+    io.sockets.emit('state',
+        Object.keys(players).map((id) => {
+            return {pos: players[id].pos, aim: players[id].aim};
+        }),
+        bullets.map((bullet) => {
+            return bullet.pos;
+        }),
+        ground.getPoints().map((point) => {
+            return point.pos;
+        })
+    );
 }, 1000 / 60);
