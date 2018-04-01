@@ -6,6 +6,7 @@ let socketIO = require('socket.io');
 let app = express();
 let server = http.Server(app);
 let io = socketIO(server);
+let Vector = require('victor');
 let constants = require('./shared/constants.js');
 let ground = require('./lib/ground.js');
 
@@ -22,14 +23,12 @@ server.listen(5000, () => {
 });
 
 let players = {};
+let bullets = [];
 
 io.on('connection', (socket) => {
     socket.on('new player', function () {
         players[socket.id] = {
-            pos: {
-                x: 300,
-                y: 0
-            },
+            pos: new Vector(400, 0),
             ammo: 1
         };
     });
@@ -43,7 +42,7 @@ io.on('connection', (socket) => {
 
         if (Object.keys(player).length !== 0) {
             let p = ground.getPoint(player.pos.x);
-
+            let vel = new Vector(0, 0);
             if (data.left) {
                 player.pos.x -= p.speed - p.m / 4;
             }
@@ -59,7 +58,7 @@ io.on('connection', (socket) => {
 
             if (data.fire) {
                 if (player.ammo > 0) {
-                    console.log('fire');
+                    bullets.push({pos: player.pos.clone(), vel: new Vector(1, -6)});
                     player.ammo--;
                 }
             } else {
@@ -70,7 +69,18 @@ io.on('connection', (socket) => {
 });
 
 setInterval(() => {
-    io.sockets.emit('state', Object.keys(players).map(function (key) {
-        return players[key].pos;
-    }), ground.getPoints());
+    bullets.forEach((bullet) => {
+        bullet.vel.y += 0.1;
+        bullet.pos.add(bullet.vel);
+    });
+
+    io.sockets.emit('state',
+        Object.keys(players).map(function (key) {
+            return players[key].pos;
+        }),
+        Object.keys(bullets).map(function (key) {
+            return bullets[key].pos;
+        }),
+        ground.getPoints()
+    );
 }, 1000 / 60);
