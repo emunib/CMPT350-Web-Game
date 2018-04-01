@@ -30,6 +30,11 @@ io.on('connection', (socket) => {
             y: 0
         };
     });
+
+    socket.on('disconnect', () => {
+        delete players[socket.id];
+    });
+
     socket.on('movement', (data) => {
         let player = players[socket.id] || {};
 
