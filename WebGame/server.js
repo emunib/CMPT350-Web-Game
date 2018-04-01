@@ -6,43 +6,53 @@ let socketIO = require('socket.io');
 let app = express();
 let server = http.Server(app);
 let io = socketIO(server);
+let constants = require('./shared/constants.js');
+let ground = require('./lib/ground.js');
+
 app.set('port', 5000);
 app.use('/static', express.static(__dirname + '/static'));
-// Routing
-app.get('/', function(request, response) {
+app.use('/shared', express.static(__dirname + '/shared'));
+
+app.get('/', (request, response) => {
     response.sendFile(path.join(__dirname, 'index.html'));
 });
-// Starts the server.
-server.listen(5000, function() {
+
+server.listen(5000, () => {
     console.log('Starting server on port 5000');
 });
+
 let players = {};
-io.on('connection', function(socket) {
-    socket.on('new player', function() {
+
+io.on('connection', (socket) => {
+    socket.on('new player', function () {
         players[socket.id] = {
             x: 300,
-            y: 300
+            y: 0
         };
     });
-    socket.on('disconnect', () => {
-        delete players[socket.id];
-    });
-    socket.on('movement', function(data) {
+    socket.on('movement', (data) => {
         let player = players[socket.id] || {};
-        if (data.left) {
-            player.x -= 5;
-        }
-        if (data.up) {
-            player.y -= 5;
-        }
-        if (data.right) {
-            player.x += 5;
-        }
-        if (data.down) {
-            player.y += 5;
+
+        if (Object.keys(player).length !== 0) {
+            let p = ground.getPoint(player.x);
+
+            if (data.left) {
+                player.x -= p.speed - p.m / 4;
+            }
+            if (data.right) {
+                player.x += p.speed + p.m / 4;
+            }
+            if (player.x < 0) {
+                player.x = 0;
+            }
+            else if (player.x >= constants.WIDTH) {
+                player.x = constants.WIDTH - 1;
+            }
+            player.y = p.m * player.x + p.b;
         }
     });
 });
-setInterval(function() {
-    io.sockets.emit('state', players);
+
+setInterval(() => {
+    io.sockets.emit('state', players, ground.getPoints());
 }, 1000 / 60);

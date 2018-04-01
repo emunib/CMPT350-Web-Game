@@ -1,57 +1,36 @@
 let socket = io();
-let movement = {
-    up: false,
-    down: false,
-    left: false,
-    right: false
-};
-document.addEventListener('keydown', function(event) {
-    switch (event.keyCode) {
-        case 65: // A
-            movement.left = true;
-            break;
-        case 87: // W
-            movement.up = true;
-            break;
-        case 68: // D
-            movement.right = true;
-            break;
-        case 83: // S
-            movement.down = true;
-            break;
-    }
-});
-document.addEventListener('keyup', function(event) {
-    switch (event.keyCode) {
-        case 65: // A
-            movement.left = false;
-            break;
-        case 87: // W
-            movement.up = false;
-            break;
-        case 68: // D
-            movement.right = false;
-            break;
-        case 83: // S
-            movement.down = false;
-            break;
-    }
-});
+
 socket.emit('new player');
-setInterval(function() {
+
+let canvas = document.getElementById('canvas');
+canvas.width = window.constants.WIDTH;
+canvas.height = window.constants.HEIGHT;
+
+setInterval(() => {
     socket.emit('movement', movement);
 }, 1000 / 60);
-var canvas = document.getElementById('canvas');
-canvas.width = 800;
-canvas.height = 600;
-var context = canvas.getContext('2d');
-socket.on('state', function(players) {
-    context.clearRect(0, 0, 800, 600);
-    context.fillStyle = 'green';
-    for (var id in players) {
-        var player = players[id];
+
+let context = canvas.getContext('2d');
+socket.on('state', (players, points) => {
+    context.clearRect(0, 0, window.constants.WIDTH, window.constants.HEIGHT);
+
+    context.fillStyle = 'red';
+    for (let id in players) {
+        let player = players[id];
         context.beginPath();
         context.arc(player.x, player.y, 10, 0, 2 * Math.PI);
         context.fill();
     }
+
+    context.fillStyle = 'black';
+    context.beginPath();
+    context.moveTo(0, window.constants.HEIGHT);
+
+    points.forEach((el) => {
+        context.lineTo(el.x, el.y);
+    });
+
+    context.lineTo(window.constants.WIDTH, window.constants.HEIGHT);
+    context.fill();
+    context.closePath();
 });
