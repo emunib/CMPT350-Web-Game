@@ -2,7 +2,8 @@ let movement = {
     left: false,
     right: false
 };
-document.addEventListener('keydown', (event)=> {
+
+document.addEventListener('keydown', (event) => {
     switch (event.keyCode) {
         case 65: // A
             movement.left = true;
@@ -12,7 +13,8 @@ document.addEventListener('keydown', (event)=> {
             break;
     }
 });
-document.addEventListener('keyup', (event)=> {
+
+document.addEventListener('keyup', (event) => {
     switch (event.keyCode) {
         case 65: // A
             movement.left = false;

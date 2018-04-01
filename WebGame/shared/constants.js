@@ -1,11 +1,6 @@
 let constants = {
-    canvas: {
-        WIDTH: 800,
-        HEIGHT: 600
-    },
-    player: {
-        SPEED: 3
-    }
+    WIDTH: 800,
+    HEIGHT: 600
 };
 
 if (typeof module === 'object') {
