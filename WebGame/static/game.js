@@ -15,15 +15,18 @@ socket.on('state', (players, bullets, points) => {
     context.clearRect(0, 0, window.constants.WIDTH, window.constants.HEIGHT);
 
     context.fillStyle = 'red';
+    console.log(players);
     for (let id in players) {
         let player = players[id];
-        context.beginPath();
-        context.arc(player.pos.x, player.pos.y, 10, 0, 2 * Math.PI);
-        context.fill();
-        context.beginPath();
-        context.moveTo(player.pos.x, player.pos.y);
-        context.lineTo(player.pos.x + player.aim.x, player.pos.y + player.aim.y);
-        context.stroke();
+        if (Object.keys(player).length !== 0) {
+            context.beginPath();
+            context.arc(player.pos.x, player.pos.y, 10, 0, 2 * Math.PI);
+            context.fill();
+            context.beginPath();
+            context.moveTo(player.pos.x, player.pos.y);
+            context.lineTo(player.pos.x + player.aim.x, player.pos.y + player.aim.y);
+            context.stroke();
+        }
     }
 
     context.fillStyle = 'blue';

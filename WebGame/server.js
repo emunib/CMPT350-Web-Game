@@ -74,7 +74,10 @@ io.on('connection', (socket) => {
 
             if (data.fire) {
                 if (player.ammo > 0) {
-                    bullets.push({pos: player.pos.clone(), vel: player.aim.clone().multiplyScalar(0.1)});
+                    bullets.push({
+                        pos: player.pos.clone().add(player.aim.clone().normalize().multiplyScalar(10)),
+                        vel: player.aim.clone().multiplyScalar(0.1)
+                    });
                     player.ammo--;
                 }
             } else {
@@ -86,15 +89,25 @@ io.on('connection', (socket) => {
 
 setInterval(() => {
     for (let i = bullets.length - 1; i >= 0; i--) {
-        if (bullets[i].pos.x < 0 || bullets[i].pos.x >= constants.WIDTH) {
-            bullets.splice(i, 1);
-        } else {
-            bullets[i].vel.y += 0.1;
-            bullets[i].pos.add(bullets[i].vel);
+        bullets[i].vel.y += 0.1;
+        bullets[i].pos.add(bullets[i].vel);
 
-            let p = ground.getPoint(bullets[i].pos.x);
-            if (bullets[i].pos.y >= p.eqn.m * bullets[i].pos.x + p.eqn.b) {
+        let hits = Object.keys(players).filter((id) => {
+            return (Object.keys(players[id]).length !== 0) && bullets[i].pos.distanceSq(players[id].pos) < 125;
+        });
+        if (hits.length > 0) {
+            bullets.splice(i, 1);
+            hits.forEach((id) => {
+                players[id] = {};
+            })
+        } else {
+            if (bullets[i].pos.x < 0 || bullets[i].pos.x >= constants.WIDTH) {
                 bullets.splice(i, 1);
+            } else {
+                let p = ground.getPoint(bullets[i].pos.x);
+                if (bullets[i].pos.y >= p.eqn.m * bullets[i].pos.x + p.eqn.b) {
+                    bullets.splice(i, 1);
+                }
             }
         }
     }
