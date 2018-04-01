@@ -27,7 +27,8 @@ io.on('connection', (socket) => {
     socket.on('new player', function () {
         players[socket.id] = {
             x: 300,
-            y: 0
+            y: 0,
+            ammo: 1
         };
     });
 
@@ -35,7 +36,7 @@ io.on('connection', (socket) => {
         delete players[socket.id];
     });
 
-    socket.on('movement', (data) => {
+    socket.on('input', (data) => {
         let player = players[socket.id] || {};
 
         if (Object.keys(player).length !== 0) {
@@ -49,11 +50,19 @@ io.on('connection', (socket) => {
             }
             if (player.x < 0) {
                 player.x = 0;
-            }
-            else if (player.x >= constants.WIDTH) {
+            } else if (player.x >= constants.WIDTH) {
                 player.x = constants.WIDTH - 1;
             }
             player.y = p.m * player.x + p.b;
+
+            if (data.fire) {
+                if (player.ammo > 0) {
+                    console.log('fire');
+                    player.ammo--;
+                }
+            } else {
+                player.ammo = 1;
+            }
         }
     });
 });

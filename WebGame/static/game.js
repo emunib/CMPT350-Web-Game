@@ -7,7 +7,7 @@ canvas.width = window.constants.WIDTH;
 canvas.height = window.constants.HEIGHT;
 
 setInterval(() => {
-    socket.emit('movement', movement);
+    socket.emit('input', input);
 }, 1000 / 60);
 
 let context = canvas.getContext('2d');

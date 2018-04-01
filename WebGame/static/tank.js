@@ -1,15 +1,19 @@
-let movement = {
+let input = {
     left: false,
-    right: false
+    right: false,
+    fire: false
 };
 
 document.addEventListener('keydown', (event) => {
     switch (event.keyCode) {
         case 65: // A
-            movement.left = true;
+            input.left = true;
             break;
         case 68: // D
-            movement.right = true;
+            input.right = true;
+            break;
+        case 32: // SPACE
+            input.fire = true;
             break;
     }
 });
@@ -17,10 +21,13 @@ document.addEventListener('keydown', (event) => {
 document.addEventListener('keyup', (event) => {
     switch (event.keyCode) {
         case 65: // A
-            movement.left = false;
+            input.left = false;
             break;
         case 68: // D
-            movement.right = false;
+            input.right = false;
+            break;
+        case 32: // SPACE
+            input.fire = false;
             break;
     }
 });
