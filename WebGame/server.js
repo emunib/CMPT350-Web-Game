@@ -26,8 +26,10 @@ let players = {};
 io.on('connection', (socket) => {
     socket.on('new player', function () {
         players[socket.id] = {
-            x: 300,
-            y: 0,
+            pos: {
+                x: 300,
+                y: 0
+            },
             ammo: 1
         };
     });
@@ -40,20 +42,20 @@ io.on('connection', (socket) => {
         let player = players[socket.id] || {};
 
         if (Object.keys(player).length !== 0) {
-            let p = ground.getPoint(player.x);
+            let p = ground.getPoint(player.pos.x);
 
             if (data.left) {
-                player.x -= p.speed - p.m / 4;
+                player.pos.x -= p.speed - p.m / 4;
             }
             if (data.right) {
-                player.x += p.speed + p.m / 4;
+                player.pos.x += p.speed + p.m / 4;
             }
-            if (player.x < 0) {
-                player.x = 0;
-            } else if (player.x >= constants.WIDTH) {
-                player.x = constants.WIDTH - 1;
+            if (player.pos.x < 0) {
+                player.pos.x = 0;
+            } else if (player.pos.x >= constants.WIDTH) {
+                player.pos.x = constants.WIDTH - 1;
             }
-            player.y = p.m * player.x + p.b;
+            player.pos.y = p.m * player.pos.x + p.b;
 
             if (data.fire) {
                 if (player.ammo > 0) {
@@ -68,5 +70,7 @@ io.on('connection', (socket) => {
 });
 
 setInterval(() => {
-    io.sockets.emit('state', players, ground.getPoints());
+    io.sockets.emit('state', Object.keys(players).map(function (key) {
+        return players[key].pos;
+    }), ground.getPoints());
 }, 1000 / 60);
