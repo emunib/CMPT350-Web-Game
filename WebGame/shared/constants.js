@@ -8,4 +8,8 @@ let constants = {
     }
 };
 
-module.exports = constants;
+if (typeof module === 'object') {
+    module.exports = constants;
+} else {
+    window.constants = constants;
+}

@@ -3,8 +3,8 @@ let socket = io();
 socket.emit('new player');
 
 var canvas = document.getElementById('canvas');
-canvas.width = Constants.WIDTH;
-canvas.height = Constants.HEIGHT;
+canvas.width = window.constants.canvas.WIDTH;
+canvas.height = window.constants.canvas.HEIGHT;
 
 let gravity = {
     gravityVal : 5,
@@ -18,7 +18,7 @@ setInterval(function() {
 
 var context = canvas.getContext('2d');
 socket.on('state', function(players, points) {
-    context.clearRect(0, 0, Constants.WIDTH, Constants.HEIGHT);
+    context.clearRect(0, 0, window.constants.canvas.WIDTH, window.constants.canvas.HEIGHT);
 
     context.fillStyle = 'red';
     for (let id in players) {
@@ -30,11 +30,11 @@ socket.on('state', function(players, points) {
 
     context.fillStyle = 'black';
     context.beginPath();
-    context.moveTo(0, Constants.HEIGHT);
+    context.moveTo(0, window.constants.canvas.HEIGHT);
     points.forEach((el) => {
         context.lineTo(el.x, el.y);
     });
-    context.lineTo(Constants.WIDTH, Constants.HEIGHT);
+    context.lineTo(window.constants.canvas.WIDTH, window.constants.canvas.HEIGHT);
     context.fill();
     context.closePath();
 });

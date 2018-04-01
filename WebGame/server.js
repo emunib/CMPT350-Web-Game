@@ -10,7 +10,7 @@ let constants = require('./shared/constants.js');
 
 app.set('port', 5000);
 app.use('/static', express.static(__dirname + '/static'));
-app.use('/static', express.static(__dirname + '/shared'));
+app.use('/shared', express.static(__dirname + '/shared'));
 // Routing
 app.get('/', function (request, response) {
     response.sendFile(path.join(__dirname, 'index.html'));
@@ -29,21 +29,24 @@ io.on('connection', function (socket) {
     });
     socket.on('movement', function (data) {
         let player = players[socket.id] || {};
-        let p = getPoint(player.x);
 
-        if (data.left) {
-            player.x -= p.speed - p.m / 4;
+        if (Object.keys(player).length !== 0) {
+            let p = getPoint(player.x);
+
+            if (data.left) {
+                player.x -= p.speed - p.m / 4;
+            }
+            if (data.right) {
+                player.x += p.speed + p.m / 4;
+            }
+            if (player.x < 0) {
+                player.x = 0;
+            }
+            else if (player.x >= constants.canvas.WIDTH) {
+                player.x = constants.canvas.WIDTH - 1;
+            }
+            player.y = p.m * player.x + p.b;
         }
-        if (data.right) {
-            player.x += p.speed + p.m / 4;
-        }
-        if (player.x < 0) {
-            player.x = 0;
-        }
-        else if (player.x >= constants.canvas.WIDTH) {
-            player.x = constants.canvas.WIDTH - 1;
-        }
-        player.y = p.m * player.x + p.b;
     });
     socket.on('gravity', data => {
 
@@ -140,6 +143,6 @@ function getPoints() {
 }
 
 function getPoint(x) {
-        let i = Math.floor(x / (constants.canvas.WIDTH / segments));
-        return getPoints()[i];
+    let i = Math.floor(x / (constants.canvas.WIDTH / segments));
+    return getPoints()[i];
 }
