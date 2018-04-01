@@ -18,11 +18,11 @@ socket.on('state', (players, bullets, points) => {
     for (let id in players) {
         let player = players[id];
         context.beginPath();
-        context.arc(player.x, player.y, 10, 0, 2 * Math.PI);
+        context.arc(player.pos.x, player.pos.y, 10, 0, 2 * Math.PI);
         context.fill();
         context.beginPath();
-        context.moveTo(player.x, player.y);
-        context.lineTo(player.x, player.y-20);
+        context.moveTo(player.pos.x, player.pos.y);
+        context.lineTo(player.pos.x + player.aim.x, player.pos.y + player.aim.y);
         context.stroke();
     }
 
@@ -37,8 +37,8 @@ socket.on('state', (players, bullets, points) => {
     context.beginPath();
     context.moveTo(0, window.constants.HEIGHT);
 
-    points.forEach((el) => {
-        context.lineTo(el.x, el.y);
+    points.forEach((point) => {
+        context.lineTo(point.x, point.y);
     });
 
     context.lineTo(window.constants.WIDTH, window.constants.HEIGHT);
