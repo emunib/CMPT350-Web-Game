@@ -9,6 +9,7 @@ let io = socketIO(server);
 let Vector = require('victor');
 let constants = require('./shared/constants.js');
 let ground = require('./lib/ground.js');
+let randColor = require('randomcolor');
 
 app.set('port', 5000);
 app.use('/static', express.static(__dirname + '/static'));
@@ -29,7 +30,11 @@ io.on('connection', (socket) => {
     socket.on('new player', function () {
         players[socket.id] = {
             pos: new Vector(400, 0),
-            aim: new Vector(0, -20),
+            aim: {
+                angle: 0,
+                power: 20
+            },
+            color: randColor({seed: socket.id}),
             ammo: 1
         };
     });
@@ -57,26 +62,48 @@ io.on('connection', (socket) => {
             player.pos.y = p.eqn.m * player.pos.x + p.eqn.b;
 
             if (data.aimleft) {
-                player.aim.rotateDeg(-1);
+                if (player.timer < 0) {
+                    player.aim.angle--;
+                } else {
+                    player.aim.angle -= 0.2;
+                    player.timer--;
+                }
             }
 
             if (data.aimright) {
-                player.aim.rotateDeg(1);
+                if (player.timer < 0) {
+                    player.aim.angle++;
+                } else {
+                    player.aim.angle += 0.2;
+                    player.timer--;
+                    console.log(player.timer);
+                }
+            }
+
+            if (!data.aimleft && !data.aimright) {
+                player.timer = 30;
             }
 
             if (data.powerup) {
-                player.aim.add(player.aim.clone().normalize());
+                player.aim.power++;
             }
 
             if (data.powerdown) {
-                player.aim.subtract(player.aim.clone().normalize());
+                player.aim.power--;
+            }
+
+            if (player.aim.power > 100) {
+                player.aim.power = 100;
+            } else if (player.aim.power < 0) {
+                player.aim.power = 0;
             }
 
             if (data.fire) {
                 if (player.ammo > 0) {
+                    let dir = new Vector(1, 0).rotateDeg(player.aim.angle);
                     bullets.push({
-                        pos: player.pos.clone().add(player.aim.clone().normalize().multiplyScalar(10)),
-                        vel: player.aim.clone().multiplyScalar(0.1)
+                        pos: player.pos.clone().add(dir.clone().multiplyScalar(10)),
+                        vel: dir.clone().multiplyScalar(player.aim.power / 10)
                     });
                     player.ammo--;
                 }
@@ -114,7 +141,7 @@ setInterval(() => {
 
     io.sockets.emit('state',
         Object.keys(players).map((id) => {
-            return {pos: players[id].pos, aim: players[id].aim};
+            return {pos: players[id].pos, aim: players[id].aim, color: players[id].color};
         }),
         bullets.map((bullet) => {
             return bullet.pos;
