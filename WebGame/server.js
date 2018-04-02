@@ -11,7 +11,8 @@ let constants = require('./shared/constants.js');
 let ground = require('./lib/ground.js');
 let randColor = require('randomcolor');
 
-app.set('port', 5000);
+const PORT = process.env.PORT || 5000;
+app.set('port', PORT);
 app.use('/static', express.static(__dirname + '/static'));
 app.use('/shared', express.static(__dirname + '/shared'));
 
@@ -19,8 +20,8 @@ app.get('/', (request, response) => {
     response.sendFile(path.join(__dirname, 'index.html'));
 });
 
-server.listen(5000, () => {
-    console.log('Starting server on port 5000');
+server.listen(PORT, () => {
+    console.log('Starting server on port: ' + PORT);
 });
 
 let players = {};
