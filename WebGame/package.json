@@ -4,10 +4,14 @@
   "description": "a game",
   "main": "index.js",
   "scripts": {
-    "test": "npm run test"
+    "deploy": "gcloud app deploy",
+    "start": "node server.js"
   },
-  "author": "",
+  "author": "Ehtasham Munib & Austin Peters",
   "license": "ISC",
+  "engines": {
+    "node": ">=4.3.2"
+  },
   "dependencies": {
     "express": "^4.16.3",
     "randomcolor": "^0.5.3",
