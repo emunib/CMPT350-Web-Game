@@ -1,20 +1,55 @@
 // Dependencies
 let express = require('express');
-let http = require('http');
-let path = require('path');
-let socketIO = require('socket.io');
 let app = express();
-let server = http.Server(app);
+let server = require('http').Server(app);
+let passport = require('passport');
+let session = require('express-session');
+let GoogleStrategy = require('passport-google-oauth2').Strategy;
+let socketIO = require('socket.io');
 let io = socketIO(server);
+let path = require('path');
 let Vector = require('victor');
 let constants = require('./shared/constants.js');
 let ground = require('./lib/ground.js');
 let randColor = require('randomcolor');
 
+passport.serializeUser(function (user, done) {
+    done(null, user);
+});
+
+passport.deserializeUser(function (user, done) {
+    done(null, user);
+});
+
+passport.use(new GoogleStrategy({
+        clientID: '206910541728-bl1qtui10ot9v7abcb70q7efv9qa9vvt.apps.googleusercontent.com',
+        clientSecret: '8QF-6RA0R20v5Wu-NcCt_u1q',
+        callbackURL: "http://localhost:5000/auth/google/callback"
+    },
+    function (accessToken, refreshToken, profile, done) {
+        // asynchronous verification, for effect...
+        process.nextTick(function () {
+
+            // To keep the example simple, the user's Google profile is returned to
+            // represent the logged-in user.  In a typical application, you would want
+            // to associate the Google account with a user record in your database,
+            // and return that user instead.
+            return done(null, profile);
+        });
+    }
+));
+
 const PORT = process.env.PORT || 5000;
 app.set('port', PORT);
 app.use('/static', express.static(__dirname + '/static'));
 app.use('/shared', express.static(__dirname + '/shared'));
+app.use(session({
+    secret: 'mysecret',
+    resave: true,
+    saveUninitialized: true
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.get('/', (request, response) => {
     response.sendFile(path.join(__dirname, 'index.html'));
@@ -23,6 +58,15 @@ app.get('/', (request, response) => {
 server.listen(PORT, () => {
     console.log('Starting server on port: ' + PORT);
 });
+
+app.get('/auth/google',
+    passport.authenticate('google', {scope: ['https://www.googleapis.com/auth/userinfo.profile']}));
+
+app.get('/auth/google/callback',
+    passport.authenticate('google', {
+        successRedirect: '/',
+        failureRedirect: '/login'
+    }));
 
 let players = {};
 let bullets = [];
