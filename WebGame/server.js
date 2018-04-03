@@ -42,7 +42,7 @@ const PORT = process.env.PORT || 5000;
 app.set('port', PORT);
 app.use('/static', express.static(__dirname + '/static'));
 app.use('/shared', express.static(__dirname + '/shared'));
-app.use(cookieParser())
+app.use(cookieParser());
 app.use(session({
     store: sessionStore,
     secret: 'mysecret',
