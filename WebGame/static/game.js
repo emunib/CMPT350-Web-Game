@@ -13,22 +13,29 @@ setInterval(() => {
 let context = canvas.getContext('2d');
 socket.on('state', (players, bullets, points) => {
     context.clearRect(0, 0, window.constants.WIDTH, window.constants.HEIGHT);
+    context.fillStyle = 'rgb(60, 60, 60)';
+    context.fillRect(0, 0, window.constants.WIDTH, window.constants.HEIGHT);
 
     for (let id in players) {
         let player = players[id];
         if (Object.keys(player).length !== 0) {
-            context.fillStyle = 'rgba(0, 0, 0, 0.02)';
-            context.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+            context.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            context.strokeStyle = 'rgba(255, 255, 255, 0.2)';
             context.beginPath();
             context.arc(player.pos.x, player.pos.y, player.aim.power, 0, 2 * Math.PI);
             context.fill();
             context.stroke();
 
-            context.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            context.fillStyle = 'rgba(255, 255, 255, 0.1)';
             context.beginPath();
             context.arc(player.pos.x, player.pos.y, player.aim.power, (player.aim.angle - 3) * (Math.PI / 180), (player.aim.angle + 3) * (Math.PI / 180))
             context.lineTo(player.pos.x, player.pos.y);
             context.fill();
+
+            context.font = '15px Calibri';
+            context.fillStyle = player.color;
+            context.textAlign = 'center';
+            context.fillText(player.name, player.pos.x, player.pos.y-20);
 
             context.fillStyle = players[id].color;
 

@@ -1,46 +1,135 @@
 // Dependencies
 let express = require('express');
-let http = require('http');
-let path = require('path');
-let socketIO = require('socket.io');
 let app = express();
-let server = http.Server(app);
+let server = require('http').Server(app);
+let passport = require('passport');
+let session = require('express-session');
+let SQLiteStore = require('connect-sqlite3')(session);
+let GoogleStrategy = require('passport-google-oauth2').Strategy;
+let socketIO = require('socket.io');
+let passportSocketIo = require('passport.socketio');
+let cookieParser = require('cookie-parser');
 let io = socketIO(server);
+let path = require('path');
 let Vector = require('victor');
 let constants = require('./shared/constants.js');
 let ground = require('./lib/ground.js');
 let randColor = require('randomcolor');
 
-app.set('port', 5000);
-app.use('/static', express.static(__dirname + '/static'));
-app.use('/shared', express.static(__dirname + '/shared'));
-
-app.get('/', (request, response) => {
-    response.sendFile(path.join(__dirname, 'index.html'));
+let sessionStore = new SQLiteStore;
+passport.serializeUser((user, done) => {
+    done(null, user);
 });
 
-server.listen(5000, () => {
-    console.log('Starting server on port 5000');
+passport.deserializeUser((user, done) => {
+    done(null, user);
+});
+
+passport.use(new GoogleStrategy({
+        clientID: '206910541728-bl1qtui10ot9v7abcb70q7efv9qa9vvt.apps.googleusercontent.com',
+        clientSecret: '8QF-6RA0R20v5Wu-NcCt_u1q',
+        callbackURL: "http://localhost:5000/auth/google/callback"
+    },
+    (accessToken, refreshToken, profile, done) => {
+        // asynchronous verification, for effect...
+        process.nextTick(() => {
+            return done(null, profile);
+        });
+    }
+));
+
+const PORT = process.env.PORT || 5000;
+app.set('port', PORT);
+app.use('/static', express.static(__dirname + '/static'));
+app.use('/shared', express.static(__dirname + '/shared'));
+app.use(cookieParser());
+app.use(session({
+    store: sessionStore,
+    secret: 'mysecret',
+    resave: true,
+    saveUninitialized: true
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
+app.get('/play', ensureAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+function ensureAuthenticated(req, res, next) {
+    if (req.isAuthenticated()) {
+        return next();
+    }
+    res.redirect('/login');
+}
+
+app.get('/', (req, res) => {
+    res.redirect('/login');
+});
+app.get('/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'login.html'));
+});
+
+server.listen(PORT, () => {
+    console.log('Starting server on port: ' + PORT);
+});
+
+app.get('/auth/google',
+    passport.authenticate('google', {scope: ['https://www.googleapis.com/auth/userinfo.profile']})
+);
+
+app.get('/auth/google/callback',
+    passport.authenticate('google', {
+        successRedirect: '/play',
+        failureRedirect: '/'
+    })
+);
+
+app.get('/logout', function(req, res){
+    let ids = Object.keys(players).filter((id) => {return players[id].id === req.user.id});
+    req.logout();
+    ids.forEach((id) => {delete players[id]});
+    res.redirect('/');
 });
 
 let players = {};
+let viewers = {};
 let bullets = [];
 
+io.use(passportSocketIo.authorize({
+    key: 'connect.sid',
+    secret: 'mysecret',
+    store: sessionStore,
+    passport: passport,
+}));
+
 io.on('connection', (socket) => {
-    socket.on('new player', function () {
-        players[socket.id] = {
-            pos: new Vector(400, 0),
-            aim: {
-                angle: 0,
-                power: 20
-            },
-            color: randColor({seed: socket.id}),
-            ammo: 1
-        };
-    });
+    if (Object.values(players).some((player) => {
+        return player.id === socket.request.user.id
+    })) {
+        viewers[socket.id] = {};
+    } else {
+        socket.on('new player', () => {
+            players[socket.id] = {
+                id: socket.request.user.id,
+                name: socket.request.user.displayName,
+                pos: new Vector(400, 0),
+                aim: {
+                    angle: 0,
+                    power: 20
+                },
+                color: randColor(),
+                ammo: 1,
+            };
+        });
+    }
 
     socket.on('disconnect', () => {
-        delete players[socket.id];
+        if (players.hasOwnProperty(socket.id)) {
+            players[socket.id] = {id: socket.request.user.id};
+        } else {
+            delete viewers[socket.id];
+        }
     });
 
     socket.on('input', (data) => {
@@ -76,7 +165,6 @@ io.on('connection', (socket) => {
                 } else {
                     player.aim.angle += 0.2;
                     player.timer--;
-                    console.log(player.timer);
                 }
             }
 
@@ -141,7 +229,12 @@ setInterval(() => {
 
     io.sockets.emit('state',
         Object.keys(players).map((id) => {
-            return {pos: players[id].pos, aim: players[id].aim, color: players[id].color};
+            return {
+                name: players[id].name,
+                pos: players[id].pos,
+                aim: players[id].aim,
+                color: players[id].color
+            };
         }),
         bullets.map((bullet) => {
             return bullet.pos;
