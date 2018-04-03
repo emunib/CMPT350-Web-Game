@@ -13,10 +13,13 @@
     "node": ">=4.3.2"
   },
   "dependencies": {
+    "connect-sqlite3": "^0.9.10",
+    "cookie-parser": "^1.4.3",
     "express": "^4.16.3",
     "express-session": "^1.15.6",
     "passport": "^0.4.0",
     "passport-google-oauth2": "^0.1.6",
+    "passport.socketio": "^3.7.0",
     "randomcolor": "^0.5.3",
     "socket.io": "^2.0.4",
     "victor": "^1.1.0"
