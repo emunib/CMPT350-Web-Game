@@ -88,17 +88,16 @@ app.get('/auth/google/callback',
 );
 
 app.get('/logout', (req, res) => {
-    let ids = Object.keys(players).filter((id) => {
-        return players[id].id === req.user.id
-    });
     req.logout();
-    ids.forEach((id) => {
-        delete players[id]
-    });
     res.redirect('/');
 });
 
 app.get('/new', ensureAuthenticated, (req, res) => {
+    turnTimer.reset();
+    mainTimer.reset();
+    status.playing = false;
+    activeSockets = [];
+    players = {};
     res.redirect('/play');
 });
 
@@ -121,7 +120,7 @@ let status = {
 
 let mainTimer = new Stopwatch(20000, {refreshRateMS: 10, almostDoneMS: 3000});
 mainTimer.onTime((time) => {
-    status.message =(Math.floor(time.ms / 100) / 10).toFixed(1);
+    status.message = (Math.floor(time.ms / 100) / 10).toFixed(1);
 }).onDone(() => {
     status.playing = true;
     turnTimer.start();
@@ -136,20 +135,21 @@ turnTimer.onTime((time) => {
 });
 
 io.on('connection', (socket) => {
-    if (status.playing || Object.values(players).length > 5 || Object.values(players).some((player) => {
-        return player.id === socket.request.user.id
-    })) {
-        viewers[socket.id] = {
-            id: socket.request.user.id,
-            name: socket.request.user.displayName,
-        };
-    } else {
-        socket.on('new player', () => {
+    socket.on('new player', () => {
+        if (status.playing || Object.values(players).length > 5 || Object.values(players).some((player) => {
+            return player.id === socket.request.user.id
+        })) {
+            viewers[socket.id] = {
+                id: socket.request.user.id,
+                name: socket.request.user.displayName,
+            };
+        } else {
             mainTimer.start();
             activeSockets.push(socket.id);
             players[socket.id] = {
                 id: socket.request.user.id,
                 name: socket.request.user.displayName,
+                live: true,
                 pos: new Vector(400, 0),
                 aim: {
                     angle: 0,
@@ -158,8 +158,8 @@ io.on('connection', (socket) => {
                 color: randColor(),
                 ammo: 1
             };
-        });
-    }
+        }
+    });
 
     socket.on('disconnect', () => {
         if (players.hasOwnProperty(socket.id)) {
@@ -248,6 +248,7 @@ io.on('connection', (socket) => {
 });
 
 setInterval(() => {
+    console.log(activeSockets, players);
     for (let i = bullets.length - 1; i >= 0; i--) {
         bullets[i].vel.y += 0.1;
         bullets[i].pos.add(bullets[i].vel);
@@ -259,10 +260,7 @@ setInterval(() => {
             bullets.splice(i, 1);
             hits.forEach((id) => {
                 activeSockets.splice(activeSockets.indexOf(id), 1);
-                players[id] = {
-                    id: players[id].id,
-                    name: players[id].name
-                };
+                players[id].live = false;
             })
         } else {
             if (bullets[i].pos.x < 0 || bullets[i].pos.x >= constants.WIDTH) {
@@ -282,12 +280,12 @@ setInterval(() => {
 
     io.sockets.emit('state', status.message,
         Object.keys(players).filter((id) => {
-            return Object.keys(players[id]).length > 2
+            return players[id].live;
         }).map((id) => {
             return {
                 name: players[id].name,
                 pos: players[id].pos,
-                aim: players[id].aim,
+                aim: (activeSockets[status.turn % activeSockets.length] === id) ? players[id].aim : new Vector(0, 0),
                 color: players[id].color
             };
         }),
