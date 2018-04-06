@@ -27,7 +27,7 @@ socket.on('state', (message, players, bullets, points) => {
 
             context.fillStyle = 'rgba(255, 255, 255, 0.1)';
             context.beginPath();
-            context.arc(player.pos.x, player.pos.y, player.aim.power, (player.aim.angle - 3) * (Math.PI / 180), (player.aim.angle + 3) * (Math.PI / 180))
+            context.arc(player.pos.x, player.pos.y, player.aim.power, (player.aim.angle - 3) * (Math.PI / 180), (player.aim.angle + 3) * (Math.PI / 180));
             context.lineTo(player.pos.x, player.pos.y);
             context.fill();
 
@@ -44,10 +44,10 @@ socket.on('state', (message, players, bullets, points) => {
         }
     }
 
-    context.fillStyle = 'blue';
+    context.fillStyle = 'gainsboro'; // light grey
     bullets.forEach((bullet) => {
         context.beginPath();
-        context.arc(bullet.x, bullet.y, 5, 0, 2 * Math.PI);
+        context.arc(bullet.x, bullet.y, 3.5, 0, 2 * Math.PI);
         context.fill();
     });
 

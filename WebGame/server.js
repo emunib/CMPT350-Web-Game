@@ -136,29 +136,42 @@ turnTimer.onTime((time) => {
 
 io.on('connection', (socket) => {
     socket.on('new player', () => {
+        console.log("Attempting to join: " + socket.id);
         if (status.playing || Object.values(players).length > 5 || Object.values(players).some((player) => {
             return player.id === socket.request.user.id
         })) {
+            console.log("\tJoining as viewer: " + socket.id);
             viewers[socket.id] = {
                 id: socket.request.user.id,
                 name: socket.request.user.displayName,
             };
         } else {
+            console.log("\tJoining game: " + socket.id);
             mainTimer.start();
             activeSockets.push(socket.id);
             players[socket.id] = {
                 id: socket.request.user.id,
                 name: socket.request.user.displayName,
                 live: true,
-                pos: new Vector(400, 0),
+                pos: new Vector(0, 0),
                 aim: {
-                    angle: 0,
-                    power: 20
+                    angle: -90,
+                    power: 50
                 },
                 color: randColor(),
                 ammo: 1
             };
         }
+
+        Object.values(players).forEach((player, index) => {
+            player.pos = new Vector((index + 1) * constants.WIDTH / (activeSockets.length + 1), 0);
+        });
+
+        console.log("\tCurrent active sockets: " + activeSockets);
+        console.log("\tCurrent players: ");
+        console.dir(players);
+        console.log();
+        console.log();
     });
 
     socket.on('disconnect', () => {
@@ -248,7 +261,6 @@ io.on('connection', (socket) => {
 });
 
 setInterval(() => {
-    console.log(activeSockets, players);
     for (let i = bullets.length - 1; i >= 0; i--) {
         bullets[i].vel.y += 0.1;
         bullets[i].pos.add(bullets[i].vel);
