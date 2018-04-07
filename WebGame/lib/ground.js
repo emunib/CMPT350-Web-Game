@@ -24,7 +24,7 @@ let ground = {
                 p1.eqn = {
                     m: m,
                     b: p1.pos.y - m * p1.pos.x,
-                    speed: (3.2 * diff.x / diff.length())
+                    speed: diff.x / diff.length()
                 }
             }
         }

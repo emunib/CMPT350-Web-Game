@@ -8,12 +8,19 @@ canvas.height = window.constants.HEIGHT;
 
 setInterval(() => {
     socket.emit('input', input);
-}, 1000 / 60);
+}, 1000 / 120);
 
 let context = canvas.getContext('2d');
 socket.on('state', (message, players, bullets, points) => {
     context.fillStyle = 'rgb(60, 60, 60)';
     context.fillRect(0, 0, window.constants.WIDTH, window.constants.HEIGHT);
+
+    context.fillStyle = 'gainsboro'; // light grey
+    bullets.forEach((bullet) => {
+        context.beginPath();
+        context.arc(bullet.x, bullet.y, 3.5, 0, 2 * Math.PI);
+        context.fill();
+    });
 
     for (let id in players) {
         let player = players[id];
@@ -31,11 +38,6 @@ socket.on('state', (message, players, bullets, points) => {
             context.lineTo(player.pos.x, player.pos.y);
             context.fill();
 
-            context.font = '15px Calibri';
-            context.fillStyle = player.color;
-            context.textAlign = 'center';
-            context.fillText(player.name, player.pos.x, player.pos.y-20);
-
             context.fillStyle = players[id].color;
 
             context.beginPath();
@@ -43,13 +45,6 @@ socket.on('state', (message, players, bullets, points) => {
             context.fill();
         }
     }
-
-    context.fillStyle = 'gainsboro'; // light grey
-    bullets.forEach((bullet) => {
-        context.beginPath();
-        context.arc(bullet.x, bullet.y, 3.5, 0, 2 * Math.PI);
-        context.fill();
-    });
 
     context.fillStyle = '#58D68D';
     context.beginPath();
@@ -63,6 +58,15 @@ socket.on('state', (message, players, bullets, points) => {
     context.fill();
     context.closePath();
 
+    for (let id in players) {
+        let player = players[id];
+        if (Object.keys(player).length !== 0) {
+            context.font = '15px Calibri';
+            context.fillStyle = "white";
+            context.textAlign = 'center';
+            context.fillText(player.name, player.pos.x, player.pos.y - 20);
+        }
+    }
 
     context.font = '30px Calibri';
     context.fillStyle = 'white';

@@ -29,7 +29,7 @@ passport.deserializeUser((user, done) => {
 passport.use(new GoogleStrategy({
         clientID: '206910541728-bl1qtui10ot9v7abcb70q7efv9qa9vvt.apps.googleusercontent.com',
         clientSecret: '8QF-6RA0R20v5Wu-NcCt_u1q',
-        callbackURL: "http://localhost:5000/auth/google/callback"
+        callbackURL: "/auth/google/callback"
     },
     (accessToken, refreshToken, profile, done) => {
         // asynchronous verification, for effect...
@@ -190,10 +190,10 @@ io.on('connection', (socket) => {
             if (activeSockets[status.turn % activeSockets.length] === socket.id) {
                 let p = ground.getPoint(player.pos.x);
                 if (data.left) {
-                    player.pos.x -= p.eqn.speed - p.eqn.m / 4;
+                    player.pos.x -= p.eqn.speed - p.eqn.m / 7;
                 }
                 if (data.right) {
-                    player.pos.x += p.eqn.speed + p.eqn.m / 4;
+                    player.pos.x += p.eqn.speed + p.eqn.m / 7;
                 }
                 if (player.pos.x < 0) {
                     player.pos.x = 0;
@@ -243,7 +243,7 @@ io.on('connection', (socket) => {
                         let dir = new Vector(1, 0).rotateDeg(player.aim.angle);
                         bullets.push({
                             pos: player.pos.clone().add(dir.clone().multiplyScalar(10)),
-                            vel: dir.clone().multiplyScalar(player.aim.power / 10)
+                            vel: dir.clone().multiplyScalar(player.aim.power / 15)
                         });
                         player.ammo--;
                     }
@@ -262,7 +262,7 @@ io.on('connection', (socket) => {
 
 setInterval(() => {
     for (let i = bullets.length - 1; i >= 0; i--) {
-        bullets[i].vel.y += 0.1;
+        bullets[i].vel.y += 0.05;
         bullets[i].pos.add(bullets[i].vel);
 
         let hits = Object.keys(players).filter((id) => {
@@ -308,4 +308,4 @@ setInterval(() => {
             return point.pos;
         })
     );
-}, 1000 / 60);
+}, 1000 / 120);
