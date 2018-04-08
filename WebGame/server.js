@@ -6,6 +6,7 @@ let passport = require('passport');
 let session = require('express-session');
 let SQLiteStore = require('connect-sqlite3')(session);
 let GoogleStrategy = require('passport-google-oauth2').Strategy;
+let FacebookStrategy = require('passport-facebook').Strategy;
 let socketIO = require('socket.io');
 let passportSocketIo = require('passport.socketio');
 let cookieParser = require('cookie-parser');
@@ -29,6 +30,19 @@ passport.use(new GoogleStrategy({
         clientID: '206910541728-bl1qtui10ot9v7abcb70q7efv9qa9vvt.apps.googleusercontent.com',
         clientSecret: '8QF-6RA0R20v5Wu-NcCt_u1q',
         callbackURL: "http://localhost:5000/auth/google/callback"
+    },
+    (accessToken, refreshToken, profile, done) => {
+        // asynchronous verification, for effect...
+        process.nextTick(() => {
+            return done(null, profile);
+        });
+    }
+));
+
+passport.use(new FacebookStrategy({
+        clientID: '405200069927909',
+        clientSecret: '90c041ae4b68c5a889e2fc1164943507',
+        callbackURL: "https://cmpt-350-webgame.appspot.com/auth/facebook/callback"
     },
     (accessToken, refreshToken, profile, done) => {
         // asynchronous verification, for effect...
@@ -78,8 +92,19 @@ app.get('/auth/google',
     passport.authenticate('google', {scope: ['https://www.googleapis.com/auth/userinfo.profile']})
 );
 
+app.get('/auth/facebook',
+    passport.authenticate('facebook')
+);
+
 app.get('/auth/google/callback',
     passport.authenticate('google', {
+        successRedirect: '/play',
+        failureRedirect: '/'
+    })
+);
+
+app.get('/auth/facebook/callback',
+    passport.authenticate('facebook', {
         successRedirect: '/play',
         failureRedirect: '/'
     })
