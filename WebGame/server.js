@@ -30,7 +30,7 @@ passport.deserializeUser((user, done) => {
 passport.use(new GoogleStrategy({
         clientID: '206910541728-bl1qtui10ot9v7abcb70q7efv9qa9vvt.apps.googleusercontent.com',
         clientSecret: '8QF-6RA0R20v5Wu-NcCt_u1q',
-        callbackURL: "http://localhost:5000/auth/google/callback"
+        callbackURL: "/auth/google/callback"
     },
     (accessToken, refreshToken, profile, done) => {
         // asynchronous verification, for effect...
@@ -123,6 +123,7 @@ app.get('/new', ensureAuthenticated, (req, res) => {
     status.playing = false;
     activeSockets = [];
     players = {};
+    status.newGame = true;
     res.redirect('/play');
 });
 
@@ -140,7 +141,7 @@ let bullets = [];
 let status = {
     turn: 0,
     message: '',
-    playing: false
+    playing: false,
 };
 
 let mainTimer = new Stopwatch(20000, {refreshRateMS: 10, almostDoneMS: 3000});
@@ -161,29 +162,42 @@ turnTimer.onTime((time) => {
 
 io.on('connection', (socket) => {
     socket.on('new player', () => {
-        if (status.playing || Object.values(players).length > 5 || Object.values(players).some((player) => {
+        console.log("Attempting to join: " + socket.id);
+        if (status.playing || mainTimer.isComplete() || Object.values(players).length > 5 || Object.values(players).some((player) => {
             return player.id === socket.request.user.id
         })) {
+            console.log("\tJoining as viewer: " + socket.id);
             viewers[socket.id] = {
                 id: socket.request.user.id,
                 name: socket.request.user.displayName,
             };
         } else {
+            console.log("\tJoining game: " + socket.id);
             mainTimer.start();
             activeSockets.push(socket.id);
             players[socket.id] = {
                 id: socket.request.user.id,
                 name: socket.request.user.displayName,
                 live: true,
-                pos: new Vector(400, 0),
+                pos: new Vector(0, 0),
                 aim: {
-                    angle: 0,
-                    power: 20
+                    angle: -90,
+                    power: 50
                 },
                 color: randColor(),
-                ammo: 1
+                ammo: 1,
+                health: 100
             };
+
+            Object.values(players).forEach((player, index) => {
+                player.pos = new Vector((index + 1) * constants.WIDTH / (activeSockets.length + 1), 0);
+            });
         }
+        console.log("\tCurrent active sockets: " + activeSockets);
+        console.log("\tCurrent players: ");
+        console.dir(players);
+        console.log();
+        console.log();
     });
 
     socket.on('disconnect', () => {
@@ -202,10 +216,10 @@ io.on('connection', (socket) => {
             if (activeSockets[status.turn % activeSockets.length] === socket.id) {
                 let p = ground.getPoint(player.pos.x);
                 if (data.left) {
-                    player.pos.x -= p.eqn.speed - p.eqn.m / 4;
+                    player.pos.x -= p.eqn.speed - p.eqn.m / 7;
                 }
                 if (data.right) {
-                    player.pos.x += p.eqn.speed + p.eqn.m / 4;
+                    player.pos.x += p.eqn.speed + p.eqn.m / 7;
                 }
                 if (player.pos.x < 0) {
                     player.pos.x = 0;
@@ -255,7 +269,7 @@ io.on('connection', (socket) => {
                         let dir = new Vector(1, 0).rotateDeg(player.aim.angle);
                         bullets.push({
                             pos: player.pos.clone().add(dir.clone().multiplyScalar(10)),
-                            vel: dir.clone().multiplyScalar(player.aim.power / 10)
+                            vel: dir.clone().multiplyScalar(player.aim.power / 15)
                         });
                         player.ammo--;
                     }
@@ -273,9 +287,17 @@ io.on('connection', (socket) => {
 });
 
 setInterval(() => {
-    console.log(activeSockets, players);
+    if (status.newGame) {
+        status.newGame = false;
+        io.sockets.emit('refresh')
+    }
+
+    if (activeSockets.length === 1 && mainTimer.isComplete()) {
+        status.playing = false;
+    }
+
     for (let i = bullets.length - 1; i >= 0; i--) {
-        bullets[i].vel.y += 0.1;
+        bullets[i].vel.y += 0.05;
         bullets[i].pos.add(bullets[i].vel);
 
         let hits = Object.keys(players).filter((id) => {
@@ -284,8 +306,11 @@ setInterval(() => {
         if (hits.length > 0) {
             bullets.splice(i, 1);
             hits.forEach((id) => {
-                activeSockets.splice(activeSockets.indexOf(id), 1);
-                players[id].live = false;
+                players[id].health -= 5;
+                if (players[id].health <= 0) {
+                    activeSockets.splice(activeSockets.indexOf(id), 1);
+                    players[id].live = false;
+                }
             })
         } else {
             if (bullets[i].pos.x < 0 || bullets[i].pos.x >= constants.WIDTH) {
@@ -303,15 +328,26 @@ setInterval(() => {
         turnTimer.start();
     }
 
-    io.sockets.emit('state', status.message,
+    Object.keys(players).forEach((id) => {
+        if (!players[id].live) {
+            io.sockets.connected[id].emit('message', "You Lost!");
+        } else if (!status.playing && mainTimer.isComplete()) {
+            io.sockets.connected[id].emit('message', "You Won!");
+        } else {
+            io.sockets.connected[id].emit('message', status.message);
+        }
+    });
+
+    io.sockets.emit('state',
         Object.keys(players).filter((id) => {
             return players[id].live;
         }).map((id) => {
             return {
                 name: players[id].name,
                 pos: players[id].pos,
-                aim: (activeSockets[status.turn % activeSockets.length] === id) ? players[id].aim : new Vector(0, 0),
-                color: players[id].color
+                aim: (activeSockets[status.turn % activeSockets.length] === id) ? players[id].aim : {angle: players[id].aim.angle, power: 0},
+                color: players[id].color,
+                health: players[id].health / 100
             };
         }),
         bullets.map((bullet) => {
@@ -321,4 +357,4 @@ setInterval(() => {
             return point.pos;
         })
     );
-}, 1000 / 60);
+}, 1000 / 120);
