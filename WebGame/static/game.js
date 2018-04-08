@@ -17,6 +17,10 @@ socket.on('message', (msg) => {
     message = msg;
 });
 
+socket.on('refresh', () => {
+    location.reload(true);
+});
+
 socket.on('state', (players, bullets, points) => {
     context.fillStyle = 'rgb(60, 60, 60)';
     context.fillRect(0, 0, window.constants.WIDTH, window.constants.HEIGHT);
@@ -45,7 +49,15 @@ socket.on('state', (players, bullets, points) => {
             context.fill();
 
             context.fillStyle = players[id].color;
+            context.strokeStyle = players[id].color;
 
+            context.beginPath();
+            context.moveTo(player.pos.x, player.pos.y);
+            context.lineWidth = 3;
+            context.lineTo(player.pos.x + Math.cos(player.aim.angle * Math.PI / 180) * 14, player.pos.y + Math.sin(player.aim.angle * Math.PI / 180) * 14);
+            context.stroke();
+
+            context.lineWidth = 1;
             context.beginPath();
             context.arc(player.pos.x, player.pos.y, 10, 0, 2 * Math.PI);
             context.fill();

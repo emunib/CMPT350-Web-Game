@@ -98,6 +98,7 @@ app.get('/new', ensureAuthenticated, (req, res) => {
     status.playing = false;
     activeSockets = [];
     players = {};
+    status.newGame = true;
     res.redirect('/play');
 });
 
@@ -124,8 +125,6 @@ mainTimer.onTime((time) => {
 }).onDone(() => {
     status.playing = true;
     turnTimer.start();
-}).onTime((time) => {
-    console.log(time.seconds);
 });
 
 let turnTimer = new Stopwatch(10000);
@@ -139,7 +138,7 @@ turnTimer.onTime((time) => {
 io.on('connection', (socket) => {
     socket.on('new player', () => {
         console.log("Attempting to join: " + socket.id);
-        if (status.playing || Object.values(players).length > 5 || Object.values(players).some((player) => {
+        if (status.playing || mainTimer.isComplete() || Object.values(players).length > 5 || Object.values(players).some((player) => {
             return player.id === socket.request.user.id
         })) {
             console.log("\tJoining as viewer: " + socket.id);
@@ -263,6 +262,11 @@ io.on('connection', (socket) => {
 });
 
 setInterval(() => {
+    if (status.newGame) {
+        status.newGame = false;
+        io.sockets.emit('refresh')
+    }
+
     if (activeSockets.length === 1 && mainTimer.isComplete()) {
         status.playing = false;
     }
@@ -316,7 +320,7 @@ setInterval(() => {
             return {
                 name: players[id].name,
                 pos: players[id].pos,
-                aim: (activeSockets[status.turn % activeSockets.length] === id) ? players[id].aim : new Vector(0, 0),
+                aim: (activeSockets[status.turn % activeSockets.length] === id) ? players[id].aim : {angle: players[id].aim.angle, power: 0},
                 color: players[id].color,
                 health: players[id].health / 100
             };
