@@ -11,8 +11,7 @@ setInterval(() => {
 }, 1000 / 60);
 
 let context = canvas.getContext('2d');
-socket.on('state', (players, bullets, points) => {
-    context.clearRect(0, 0, window.constants.WIDTH, window.constants.HEIGHT);
+socket.on('state', (message, players, bullets, points) => {
     context.fillStyle = 'rgb(60, 60, 60)';
     context.fillRect(0, 0, window.constants.WIDTH, window.constants.HEIGHT);
 
@@ -63,4 +62,10 @@ socket.on('state', (players, bullets, points) => {
     context.lineTo(window.constants.WIDTH, window.constants.HEIGHT);
     context.fill();
     context.closePath();
+
+
+    context.font = '30px Calibri';
+    context.fillStyle = 'white';
+    context.textAlign = 'center';
+    context.fillText(message, constants.WIDTH/2, 50);
 });

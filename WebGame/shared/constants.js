@@ -1,6 +1,6 @@
 let constants = {
     WIDTH: 800,
-    HEIGHT: 600
+    HEIGHT: 500
 };
 
 if (typeof module === 'object') {

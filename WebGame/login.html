@@ -3,8 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <title>Login</title>
+    <style>
+        #google {
+            position: absolute;
+            width: 260px;
+            top: 43%;
+            left: 50%;
+
+            margin: -30px 0 0 -130px;
+        }
+        #facebook {
+            position: absolute;
+            width: 260px;
+            top: 57%;
+            left: 50%;
+
+            margin: -30px 0 0 -130px;
+        }
+    </style>
 </head>
 <body>
-<a href="/auth/google">Login</a>
+<a href="/auth/google" id="google">
+    <img src="./res/btn_google_signin_light_normal_web@2x.png"
+         alt="Login with Google"
+         class="button">
+</a>
+<div></div>
+<a href="/auth/facebook" id="facebook">
+<img src="./res/facebookbutton.png"
+     alt="Login with Facebook"
+     class="button">
+</a>
 </body>
 </html>

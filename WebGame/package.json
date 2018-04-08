@@ -18,10 +18,12 @@
     "express": "^4.16.3",
     "express-session": "^1.15.6",
     "passport": "^0.4.0",
+    "passport-facebook": "^2.1.1",
     "passport-google-oauth2": "^0.1.6",
     "passport.socketio": "^3.7.0",
     "randomcolor": "^0.5.3",
     "socket.io": "^2.0.4",
+    "timer-stopwatch-dev": "^1.1.0",
     "victor": "^1.1.0"
   },
   "devDependencies": {
