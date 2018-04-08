@@ -115,7 +115,7 @@ let bullets = [];
 let status = {
     turn: 0,
     message: '',
-    playing: false
+    playing: false,
 };
 
 let mainTimer = new Stopwatch(20000, {refreshRateMS: 10, almostDoneMS: 3000});
@@ -124,6 +124,8 @@ mainTimer.onTime((time) => {
 }).onDone(() => {
     status.playing = true;
     turnTimer.start();
+}).onTime((time) => {
+    console.log(time.seconds);
 });
 
 let turnTimer = new Stopwatch(10000);
@@ -159,14 +161,14 @@ io.on('connection', (socket) => {
                     power: 50
                 },
                 color: randColor(),
-                ammo: 1
+                ammo: 1,
+                health: 100
             };
+
+            Object.values(players).forEach((player, index) => {
+                player.pos = new Vector((index + 1) * constants.WIDTH / (activeSockets.length + 1), 0);
+            });
         }
-
-        Object.values(players).forEach((player, index) => {
-            player.pos = new Vector((index + 1) * constants.WIDTH / (activeSockets.length + 1), 0);
-        });
-
         console.log("\tCurrent active sockets: " + activeSockets);
         console.log("\tCurrent players: ");
         console.dir(players);
@@ -261,6 +263,10 @@ io.on('connection', (socket) => {
 });
 
 setInterval(() => {
+    if (activeSockets.length === 1 && mainTimer.isComplete()) {
+        status.playing = false;
+    }
+
     for (let i = bullets.length - 1; i >= 0; i--) {
         bullets[i].vel.y += 0.05;
         bullets[i].pos.add(bullets[i].vel);
@@ -271,8 +277,11 @@ setInterval(() => {
         if (hits.length > 0) {
             bullets.splice(i, 1);
             hits.forEach((id) => {
-                activeSockets.splice(activeSockets.indexOf(id), 1);
-                players[id].live = false;
+                players[id].health -= 5;
+                if (players[id].health <= 0) {
+                    activeSockets.splice(activeSockets.indexOf(id), 1);
+                    players[id].live = false;
+                }
             })
         } else {
             if (bullets[i].pos.x < 0 || bullets[i].pos.x >= constants.WIDTH) {
@@ -290,7 +299,17 @@ setInterval(() => {
         turnTimer.start();
     }
 
-    io.sockets.emit('state', status.message,
+    Object.keys(players).forEach((id) => {
+        if (!players[id].live) {
+            io.sockets.connected[id].emit('message', "You Lost!");
+        } else if (!status.playing && mainTimer.isComplete()) {
+            io.sockets.connected[id].emit('message', "You Won!");
+        } else {
+            io.sockets.connected[id].emit('message', status.message);
+        }
+    });
+
+    io.sockets.emit('state',
         Object.keys(players).filter((id) => {
             return players[id].live;
         }).map((id) => {
@@ -298,7 +317,8 @@ setInterval(() => {
                 name: players[id].name,
                 pos: players[id].pos,
                 aim: (activeSockets[status.turn % activeSockets.length] === id) ? players[id].aim : new Vector(0, 0),
-                color: players[id].color
+                color: players[id].color,
+                health: players[id].health / 100
             };
         }),
         bullets.map((bullet) => {

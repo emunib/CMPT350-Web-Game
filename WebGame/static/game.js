@@ -5,13 +5,19 @@ socket.emit('new player');
 let canvas = document.getElementById('canvas');
 canvas.width = window.constants.WIDTH;
 canvas.height = window.constants.HEIGHT;
+let message = "";
 
 setInterval(() => {
     socket.emit('input', input);
 }, 1000 / 120);
 
 let context = canvas.getContext('2d');
-socket.on('state', (message, players, bullets, points) => {
+
+socket.on('message', (msg) => {
+    message = msg;
+});
+
+socket.on('state', (players, bullets, points) => {
     context.fillStyle = 'rgb(60, 60, 60)';
     context.fillRect(0, 0, window.constants.WIDTH, window.constants.HEIGHT);
 
@@ -65,6 +71,12 @@ socket.on('state', (message, players, bullets, points) => {
             context.fillStyle = "white";
             context.textAlign = 'center';
             context.fillText(player.name, player.pos.x, player.pos.y - 20);
+
+            context.strokeStyle = "red";
+            context.beginPath();
+            context.moveTo(player.pos.x - player.health * 25, player.pos.y - 15);
+            context.lineTo(player.pos.x + player.health * 25, player.pos.y - 15);
+            context.stroke();
         }
     }
 
