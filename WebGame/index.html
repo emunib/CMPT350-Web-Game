@@ -1,34 +1,41 @@
 <html>
 <head>
-    <title>A Multiplayer Game</title>
+    <title>WebGame</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/js/materialize.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/css/materialize.min.css">
+    <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="client/materialize-social.css">
     <style>
         canvas {
-            display: block;
             width: 800px;
             height: 500px;
-            margin: 50px auto auto;
         }
-        div {
-            display: block;
-            margin: 20px auto;
-            text-align: center;
-        }
-        .button {
-            display: inline;
-            float: none;
+
+        html, body, .my-wrapper {
+            height: 100%;
         }
     </style>
-    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-<canvas id="canvas"></canvas>
-<div>
-    <a href="/logout" class="button">Sign out</a>
-    <a href="/new" class="action button">New game</a>
+<div class="my-wrapper valign-wrapper blue-grey darken-1">
+    <div class="row">
+        <div class="col">
+            <div class="card hoverable">
+                <div class="card-content">
+                    <canvas id="canvas"></canvas>
+                    <div class="card-action">
+                        <span class="right"><a href="/new">New Game</a></span>
+                        <span class="right"><a href="/logout">Sign Out</a></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 </body>
 <script src="/shared/constants.js"></script>
-<script src="/static/game.js"></script>
-<script src="/static/input.js"></script>
+<script src="/client/game.js"></script>
+<script src="/client/input.js"></script>
 </html>

@@ -3,36 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <title>Login</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/js/materialize.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/css/materialize.min.css">
+    <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="client/materialize-social.css">
+
     <style>
-        #google {
-            position: absolute;
-            width: 260px;
-            top: 43%;
-            left: 50%;
-
-            margin: -30px 0 0 -130px;
+        .login-card {
+            max-width: 400px;
+            margin: auto;
         }
-        #facebook {
-            position: absolute;
-            width: 260px;
-            top: 57%;
-            left: 50%;
 
-            margin: -30px 0 0 -130px;
+        html, body, .my-wrapper {
+            height: 100%;
         }
     </style>
 </head>
 <body>
-<a href="/auth/google" id="google">
-    <img src="./res/btn_google_signin_light_normal_web@2x.png"
-         alt="Login with Google"
-         class="button">
-</a>
-<div></div>
-<a href="/auth/facebook" id="facebook">
-<img src="./res/facebookbutton.png"
-     alt="Login with Facebook"
-     class="button">
-</a>
+<div class="my-wrapper valign-wrapper blue-grey darken-1">
+    <div class="row">
+        <div class="col s12 login-card">
+            <div class="card hoverable">
+                <div class="card-content">
+                    <span class="card-title center-align">Welcome</span>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <form action="/guest" method="post">
+                                <input placeholder="Continue as a guest" name="username" id="username" type="text"
+                                       required="required"
+                                       pattern="[A-Za-z0-9]{1,20}">
+                                <label for="username">Username</label>
+                                <input value="password" name="password" type="hidden">
+                            </form>
+                        </div>
+                    </div>
+                    <div class="row usage google">
+                        <a class="waves-effect waves-light btn-large col s12 social google"
+                           href="/auth/google">
+                            <i class="fa fa-fw fa-google"></i> Sign in with Google</a>
+                    </div>
+                    <div class="row usage facebook">
+                        <a class="waves-effect waves-light btn-large col s12 social facebook"
+                           href="/auth/facebook">
+                            <i class="fa fa-fw fa-facebook"></i> Sign in with Facebook</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>

@@ -5,10 +5,12 @@ let server = require('http').Server(app);
 let passport = require('passport');
 let session = require('express-session');
 let SQLiteStore = require('connect-sqlite3')(session);
+let LocalStrategy = require('passport-local').Strategy;
 let GoogleStrategy = require('passport-google-oauth2').Strategy;
 let FacebookStrategy = require('passport-facebook').Strategy;
 let socketIO = require('socket.io');
 let passportSocketIo = require('passport.socketio');
+let bodyParser = require('body-parser');
 let cookieParser = require('cookie-parser');
 let io = socketIO(server);
 let path = require('path');
@@ -17,6 +19,7 @@ let constants = require('./shared/constants.js');
 let ground = require('./lib/ground.js');
 let randColor = require('randomcolor');
 let Stopwatch = require('timer-stopwatch-dev');
+let uniqid = require('uniqid');
 
 let sessionStore = new SQLiteStore;
 passport.serializeUser((user, done) => {
@@ -26,6 +29,12 @@ passport.serializeUser((user, done) => {
 passport.deserializeUser((user, done) => {
     done(null, user);
 });
+
+passport.use(new LocalStrategy(
+    function (username, password, done) {
+        return done(null, {id: uniqid('guest-' + username + '-'), displayName: username});
+    }
+));
 
 passport.use(new GoogleStrategy({
         clientID: '206910541728-bl1qtui10ot9v7abcb70q7efv9qa9vvt.apps.googleusercontent.com',
@@ -55,7 +64,7 @@ passport.use(new FacebookStrategy({
 
 const PORT = process.env.PORT || 5000;
 app.set('port', PORT);
-app.use('/static', express.static(__dirname + '/static'));
+app.use('/client', express.static(__dirname + '/client'));
 app.use('/shared', express.static(__dirname + '/shared'));
 app.use('/res', express.static(__dirname + '/res'));
 app.use(cookieParser());
@@ -65,12 +74,9 @@ app.use(session({
     resave: true,
     saveUninitialized: true
 }));
+app.use(bodyParser.urlencoded({extended: false}));
 app.use(passport.initialize());
 app.use(passport.session());
-
-app.get('/play', ensureAuthenticated, (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
 
 function ensureAuthenticated(req, res, next) {
     if (req.isAuthenticated()) {
@@ -79,6 +85,10 @@ function ensureAuthenticated(req, res, next) {
     res.redirect('/login');
 }
 
+app.get('/play', ensureAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 app.get('/', (req, res) => {
     res.redirect('/login');
 });
@@ -86,9 +96,13 @@ app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'login.html'));
 });
 
-server.listen(PORT, () => {
-    console.log('Starting server on port: ' + PORT);
-});
+app.post('/guest',
+    passport.authenticate('local', {
+        successRedirect: '/play',
+        failureRedirect: '/login',
+        failureFlash: false
+    })
+);
 
 app.get('/auth/google',
     passport.authenticate('google', {scope: ['https://www.googleapis.com/auth/userinfo.profile']})
@@ -125,6 +139,10 @@ app.get('/new', ensureAuthenticated, (req, res) => {
     players = {};
     status.newGame = true;
     res.redirect('/play');
+});
+
+server.listen(PORT, () => {
+    console.log('Starting server on port: ' + PORT);
 });
 
 io.use(passportSocketIo.authorize({
